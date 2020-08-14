@@ -7,12 +7,16 @@ require (
 	github.com/docker/buildx v0.4.1
 	github.com/docker/distribution v2.7.1-0.20190205005809-0d3efadf0154+incompatible
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
+	github.com/go-git/go-git v4.7.0+incompatible
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/gorilla/mux v1.7.2
 	github.com/moby/buildkit v0.7.2
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.4.2
+	github.com/urfave/cli v1.22.2
+	github.com/urfave/cli/v2 v2.2.0
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
 )
 
 replace (
