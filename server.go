@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/docker/distribution/reference"
 	dockerclient "github.com/docker/docker/client"
-	"github.com/go-git/go-git/v5"
 	"github.com/gorilla/mux"
 	"github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/client/llb"
@@ -41,11 +39,6 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	w.WriteHeader(http.StatusOK)
 
-	_, _ = git.PlainClone("/tmp/foo", false, &git.CloneOptions{
-		URL:      "https://" + vars["name"],
-		Progress: os.Stdout,
-	})
-
 	dc, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv)
 	if err != nil {
 		logrus.Fatal(err)
@@ -63,13 +56,9 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 		Frontend: "dockerfile.v0",
 		Exports:  []client.ExportEntry{{Type: "moby", Attrs: map[string]string{}}},
 	}
-	solveOpt.LocalDirs, err = attrMap(
-		fmt.Sprintf("context=%s", "/tmp/foo"),
-		fmt.Sprintf("dockerfile=%s", "/tmp/foo"),
-	)
-	if err != nil {
-		logrus.Fatal("attrmap", err)
-	}
+	solveOpt.FrontendAttrs = map[string]string{}
+	solveOpt.FrontendAttrs["context"] = "git://" + vars["name"]
+	solveOpt.FrontendAttrs["filename"] = "Dockerfile"
 
 	eg, ctx := errgroup.WithContext(context.Background())
 
