@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/docker/distribution/reference"
@@ -85,16 +84,4 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 	if err = eg.Wait(); err != nil {
 		logrus.Fatal(err)
 	}
-}
-
-func attrMap(sl ...string) (map[string]string, error) {
-	m := map[string]string{}
-	for _, v := range sl {
-		parts := strings.SplitN(v, "=", 2)
-		if len(parts) != 2 {
-			return nil, errors.Errorf("invalid value %s", v)
-		}
-		m[parts[0]] = parts[1]
-	}
-	return m, nil
 }
