@@ -3,12 +3,13 @@ package main
 import (
 	"archive/tar"
 	"context"
-	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/docker/distribution/reference"
@@ -29,7 +30,7 @@ func server(clix *cli.Context) error {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/manifests/{reference}", manifests)
-	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/blobs/{reference}", manifests)
+	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/blobs/{reference}", blobs)
 
 	srv := &http.Server{
 		Handler:      router,
@@ -59,9 +60,28 @@ func (d *demux) Read(dt []byte) (int, error) {
 	return d.Reader.Read(dt)
 }
 
+func blobs(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	s := strings.Split(vars["reference"], ":")
+	dd := s[1]
+
+	f, err := os.Open("/tmp/that/blobs/sha256/" + dd)
+	if err != nil {
+		return
+	}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return
+	}
+
+	_, err = w.Write(b)
+	if err != nil {
+		return
+	}
+}
+
 func manifests(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	w.WriteHeader(http.StatusOK)
 
 	dc, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv)
 	if err != nil {
@@ -108,16 +128,16 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 	}
 
 	eg, ctx := errgroup.WithContext(context.Background())
-
+	digest := ""
 	var def *llb.Definition
 	eg.Go(func() error {
 		res, err := c.Solve(ctx, def, solveOpt, ch)
 		if err != nil {
 			return errors.Wrap(err, "solve")
 		}
-		for k, v := range res.ExporterResponse {
-			fmt.Printf("solve response: %s=%s\n", k, v)
-		}
+
+		digest = res.ExporterResponse["containerimage.digest"]
+
 		return nil
 	})
 
@@ -131,6 +151,26 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 
 	if err = eg.Wait(); err != nil {
 		logrus.Fatal(err)
+	}
+
+	ss := strings.Split(digest, ":")
+	dd := ss[1]
+	f, err := os.Open("/tmp/that/blobs/sha256/" + dd)
+	if err != nil {
+		return
+	}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return
+	}
+
+	w.Header().Set("Docker-Content-Digest", digest)
+	w.Header().Set("Etag", digest)
+
+	w.Header().Set("Content-Type", "application/vnd.oci.image.manifest.v1+json")
+	_, err = w.Write(b)
+	if err != nil {
+		return
 	}
 }
 
