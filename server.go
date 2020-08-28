@@ -45,6 +45,7 @@ func server(clix *cli.Context) error {
 
 func demuxConn(c net.Conn) net.Conn {
 	pr, pw := io.Pipe()
+	// nolint: errcheck
 	go stdcopy.StdCopy(pw, os.Stderr, c)
 	return &demux{
 		Conn:   c,
