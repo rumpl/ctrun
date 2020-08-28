@@ -20,7 +20,6 @@ import (
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/moby/pkg/stdcopy"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -29,7 +28,7 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 
 	dc, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv)
 	if err != nil {
-		logrus.Fatal(err)
+		panic(err)
 	}
 	dc.NegotiateAPIVersion(context.Background())
 	response, err := dc.ContainerExecCreate(context.Background(), "buildx_buildkit_objective_noyce0", types.ExecConfig{
@@ -52,7 +51,7 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 		return conn, nil
 	}))
 	if err != nil {
-		logrus.Fatal(err)
+		panic(err)
 	}
 	defer c.Close()
 	ch := make(chan *client.SolveStatus)
@@ -94,7 +93,7 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err = eg.Wait(); err != nil {
-		logrus.Fatal(err)
+		panic(err)
 	}
 
 	ss := strings.Split(digest, ":")

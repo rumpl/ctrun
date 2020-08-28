@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -16,7 +15,21 @@ type ServerOpts struct {
 	SecretKeyID string
 }
 
-func Run(opts ServerOpts) error {
+type Server interface {
+	Start() error
+}
+
+type registryBuildServer struct {
+	opts ServerOpts
+}
+
+func New(opts ServerOpts) Server {
+	return &registryBuildServer{
+		opts: opts,
+	}
+}
+
+func (s *registryBuildServer) Start() error {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/manifests/{reference}", manifests)
@@ -24,11 +37,10 @@ func Run(opts ServerOpts) error {
 
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         opts.Address,
+		Addr:         s.opts.Address,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
 
-	fmt.Println("Server started")
 	return srv.ListenAndServe()
 }
