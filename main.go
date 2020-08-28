@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/rumpl/ctrun/pkg/server"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -10,15 +11,8 @@ import (
 func main() {
 	app := &cli.App{
 		Name: "ctrun",
-		Commands: []*cli.Command{
-			{
-				Name:   "server",
-				Action: server,
-			},
-			{
-				Name:   "build",
-				Action: build,
-			},
+		Action: func(clix *cli.Context) error {
+			return server.Run()
 		},
 	}
 

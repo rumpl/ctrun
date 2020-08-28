@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"archive/tar"
@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/gorilla/mux"
@@ -22,53 +21,8 @@ import (
 	"github.com/moby/moby/pkg/stdcopy"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
 	"golang.org/x/sync/errgroup"
 )
-
-// server is the most awesomest registry
-func server(clix *cli.Context) error {
-	router := mux.NewRouter()
-
-	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/manifests/{reference}", manifests)
-	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/blobs/{reference}", blobs)
-
-	srv := &http.Server{
-		Handler:      router,
-		Addr:         "127.0.0.1:1323",
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
-	return srv.ListenAndServe()
-}
-
-func demuxConn(c net.Conn) net.Conn {
-	pr, pw := io.Pipe()
-	// nolint: errcheck
-	go stdcopy.StdCopy(pw, os.Stderr, c)
-	return &demux{
-		Conn:   c,
-		Reader: pr,
-	}
-}
-
-type demux struct {
-	net.Conn
-	io.Reader
-}
-
-func (d *demux) Read(dt []byte) (int, error) {
-	return d.Reader.Read(dt)
-}
-
-func blobs(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	s := strings.Split(vars["reference"], ":")
-	dd := s[1]
-
-	http.Redirect(w, r, fmt.Sprintf("https://ctrun.s3.fr-par.scw.cloud/blobs/sha256/%s", dd), 301)
-}
 
 func manifests(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -197,4 +151,23 @@ func wrapWriteCloser() func(map[string]string) (io.WriteCloser, error) {
 	return func(d map[string]string) (io.WriteCloser, error) {
 		return pw, nil
 	}
+}
+
+func demuxConn(c net.Conn) net.Conn {
+	pr, pw := io.Pipe()
+	// nolint: errcheck
+	go stdcopy.StdCopy(pw, os.Stderr, c)
+	return &demux{
+		Conn:   c,
+		Reader: pr,
+	}
+}
+
+type demux struct {
+	net.Conn
+	io.Reader
+}
+
+func (d *demux) Read(dt []byte) (int, error) {
+	return d.Reader.Read(dt)
 }
