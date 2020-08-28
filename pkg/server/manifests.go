@@ -14,8 +14,6 @@ import (
 	"github.com/docker/docker/api/types"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/gorilla/mux"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/moby/pkg/stdcopy"
@@ -23,7 +21,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func manifests(w http.ResponseWriter, r *http.Request) {
+const manifestV1 = "application/vnd.oci.image.manifest.v1+json"
+
+func (s *registryBuildServer) manifests(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	dc, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv)
@@ -65,7 +65,7 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 		Exports: []client.ExportEntry{
 			{
 				Type:   "oci",
-				Output: wrapWriteCloser(),
+				Output: s.wrapWriteCloser(),
 			},
 		},
 	}
@@ -101,18 +101,7 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("https://ctrun.s3.fr-par.scw.cloud/blobs/sha256/%s", dd), 301)
 }
 
-func wrapWriteCloser() func(map[string]string) (io.WriteCloser, error) {
-	endpoint := "s3.fr-par.scw.cloud"
-	accessKeyID := os.Getenv("ACCESS_KEY_ID")
-	secretAccessKey := os.Getenv("SECRET_KEY_ID")
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
-		Secure: true,
-	})
-	if err != nil {
-		panic(err)
-	}
-
+func (s *registryBuildServer) wrapWriteCloser() func(map[string]string) (io.WriteCloser, error) {
 	pr, pw := io.Pipe()
 	// TODO: check errors
 	go func() {
@@ -133,14 +122,7 @@ func wrapWriteCloser() func(map[string]string) (io.WriteCloser, error) {
 			case tar.TypeDir:
 				continue
 			case tar.TypeReg:
-				bucket := "ctrun"
-				_, err = minioClient.PutObject(context.Background(), bucket, header.Name, tr, -1, minio.PutObjectOptions{
-					UserMetadata: map[string]string{
-						"x-amz-acl": "public-read",
-					},
-					ContentType: "application/vnd.oci.image.manifest.v1+json",
-				})
-				if err != nil {
+				if err := s.store.Put(header.Name, tr, manifestV1); err != nil {
 					panic(err)
 				}
 			}

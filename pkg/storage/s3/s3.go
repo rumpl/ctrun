@@ -1,6 +1,9 @@
 package s3
 
 import (
+	"context"
+	"io"
+
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rumpl/ctrun/pkg/storage/types"
@@ -8,6 +11,7 @@ import (
 
 type s3Storage struct {
 	client *minio.Client
+	bucket string
 }
 
 func New(opts types.StorageOpts) (types.Storage, error) {
@@ -21,9 +25,17 @@ func New(opts types.StorageOpts) (types.Storage, error) {
 
 	return &s3Storage{
 		client: minioClient,
+		bucket: opts.Bucket,
 	}, nil
 }
 
-func (s *s3Storage) Put() error {
-	return nil
+func (s *s3Storage) Put(name string, r io.Reader, contentType string) error {
+	_, err := s.client.PutObject(context.Background(), s.bucket, name, r, -1, minio.PutObjectOptions{
+		UserMetadata: map[string]string{
+			"x-amz-acl": "public-read",
+		},
+		ContentType: contentType,
+	})
+
+	return err
 }

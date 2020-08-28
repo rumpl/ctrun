@@ -35,7 +35,7 @@ func New(address string, store types.Storage) Server {
 func (s *registryBuildServer) Start() error {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/manifests/{reference}", manifests)
+	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/manifests/{reference}", s.manifests)
 	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/blobs/{reference}", blobs)
 
 	srv := &http.Server{

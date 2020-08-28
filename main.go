@@ -44,6 +44,12 @@ func main() {
 				EnvVars:     []string{"SECRET_KEY_ID"},
 				Destination: &storageOpts.SecretKey,
 				Required:    true,
+			}, &cli.StringFlag{
+				Name:        "bucket",
+				Usage:       "S3 bucket",
+				EnvVars:     []string{"S3_BUCKET"},
+				Destination: &storageOpts.Bucket,
+				Value:       "ctrun",
 			},
 		},
 		Action: func(clix *cli.Context) error {
