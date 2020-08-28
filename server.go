@@ -3,12 +3,11 @@ package main
 import (
 	"archive/tar"
 	"context"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -16,6 +15,8 @@ import (
 	"github.com/docker/docker/api/types"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/gorilla/mux"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/moby/pkg/stdcopy"
@@ -65,19 +66,7 @@ func blobs(w http.ResponseWriter, r *http.Request) {
 	s := strings.Split(vars["reference"], ":")
 	dd := s[1]
 
-	f, err := os.Open("/tmp/that/blobs/sha256/" + dd)
-	if err != nil {
-		return
-	}
-	b, err := ioutil.ReadAll(f)
-	if err != nil {
-		return
-	}
-
-	_, err = w.Write(b)
-	if err != nil {
-		return
-	}
+	http.Redirect(w, r, fmt.Sprintf("https://ctrun.s3.fr-par.scw.cloud/blobs/sha256/%s", dd), 301)
 }
 
 func manifests(w http.ResponseWriter, r *http.Request) {
@@ -155,26 +144,21 @@ func manifests(w http.ResponseWriter, r *http.Request) {
 
 	ss := strings.Split(digest, ":")
 	dd := ss[1]
-	f, err := os.Open("/tmp/that/blobs/sha256/" + dd)
-	if err != nil {
-		return
-	}
-	b, err := ioutil.ReadAll(f)
-	if err != nil {
-		return
-	}
-
-	w.Header().Set("Docker-Content-Digest", digest)
-	w.Header().Set("Etag", digest)
-
-	w.Header().Set("Content-Type", "application/vnd.oci.image.manifest.v1+json")
-	_, err = w.Write(b)
-	if err != nil {
-		return
-	}
+	http.Redirect(w, r, fmt.Sprintf("https://ctrun.s3.fr-par.scw.cloud/blobs/sha256/%s", dd), 301)
 }
 
 func wrapWriteCloser() func(map[string]string) (io.WriteCloser, error) {
+	endpoint := "s3.fr-par.scw.cloud"
+	accessKeyID := os.Getenv("ACCESS_KEY_ID")
+	secretAccessKey := os.Getenv("SECRET_KEY_ID")
+	minioClient, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+		Secure: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	pr, pw := io.Pipe()
 	// TODO: check errors
 	go func() {
@@ -186,28 +170,25 @@ func wrapWriteCloser() func(map[string]string) (io.WriteCloser, error) {
 			case err == io.EOF:
 				return
 			case err != nil:
-				return
+				panic(err)
 			case header == nil:
 				return
 			}
 
-			target := filepath.Join("/tmp/that", header.Name)
 			switch header.Typeflag {
 			case tar.TypeDir:
-				if _, err := os.Stat(target); err != nil {
-					if err := os.MkdirAll(target, 0755); err != nil {
-						return
-					}
-				}
+				continue
 			case tar.TypeReg:
-				f, err := os.OpenFile(target, os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+				bucket := "ctrun"
+				_, err = minioClient.PutObject(context.Background(), bucket, header.Name, tr, -1, minio.PutObjectOptions{
+					UserMetadata: map[string]string{
+						"x-amz-acl": "public-read",
+					},
+					ContentType: "application/vnd.oci.image.manifest.v1+json",
+				})
 				if err != nil {
-					return
+					panic(err)
 				}
-				if _, err := io.Copy(f, tr); err != nil {
-					return
-				}
-				f.Close()
 			}
 		}
 	}()
