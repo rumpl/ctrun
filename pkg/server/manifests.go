@@ -3,7 +3,6 @@ package server
 import (
 	"archive/tar"
 	"context"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -96,9 +95,8 @@ func (s *registryBuildServer) manifests(w http.ResponseWriter, r *http.Request) 
 		panic(err)
 	}
 
-	ss := strings.Split(digest, ":")
-	dd := ss[1]
-	http.Redirect(w, r, fmt.Sprintf("https://ctrun.s3.fr-par.scw.cloud/blobs/sha256/%s", dd), 301)
+	parts := strings.Split(digest, ":")
+	http.Redirect(w, r, s.store.Url(parts[1]), 301)
 }
 
 func (s *registryBuildServer) wrapWriteCloser() func(map[string]string) (io.WriteCloser, error) {

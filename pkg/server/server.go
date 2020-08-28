@@ -36,7 +36,7 @@ func (s *registryBuildServer) Start() error {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/manifests/{reference}", s.manifests)
-	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/blobs/{reference}", blobs)
+	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/blobs/{reference}", s.blobs)
 
 	srv := &http.Server{
 		Handler:      router,

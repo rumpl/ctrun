@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/minio/minio-go/v7"
@@ -10,8 +11,9 @@ import (
 )
 
 type s3Storage struct {
-	client *minio.Client
-	bucket string
+	client   *minio.Client
+	bucket   string
+	endpoint string
 }
 
 func New(opts types.StorageOpts) (types.Storage, error) {
@@ -24,9 +26,14 @@ func New(opts types.StorageOpts) (types.Storage, error) {
 	}
 
 	return &s3Storage{
-		client: minioClient,
-		bucket: opts.Bucket,
+		client:   minioClient,
+		bucket:   opts.Bucket,
+		endpoint: opts.Endpoint,
 	}, nil
+}
+
+func (s *s3Storage) Url(name string) string {
+	return fmt.Sprintf("https://%s.%s/blobs/sha256/%s", s.bucket, s.endpoint, name)
 }
 
 func (s *s3Storage) Put(name string, r io.Reader, contentType string) error {
