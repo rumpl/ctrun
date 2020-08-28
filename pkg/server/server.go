@@ -9,7 +9,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func Run() error {
+// ServerOpts are the options for the server
+type ServerOpts struct {
+	Address     string
+	AccessKey   string
+	SecretKeyID string
+}
+
+func Run(opts ServerOpts) error {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/v2/{name:"+reference.NameRegexp.String()+"}/manifests/{reference}", manifests)
@@ -17,7 +24,7 @@ func Run() error {
 
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         "127.0.0.1:1323",
+		Addr:         opts.Address,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
