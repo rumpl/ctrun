@@ -4,18 +4,13 @@ go 1.15
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
-	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/containerd/console v1.0.0
+	github.com/containerd/console v1.0.0 // indirect
 	github.com/docker/distribution v2.7.1-0.20190205005809-0d3efadf0154+incompatible
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
-	github.com/docker/go v1.5.1-1 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/gorilla/mux v1.8.0
-	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
-	github.com/jinzhu/gorm v1.9.16 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/minio/minio-go/v7 v7.0.5
 	github.com/moby/buildkit v0.7.2
 	github.com/moby/moby v1.13.1
@@ -23,14 +18,10 @@ require (
 	github.com/opencontainers/selinux v1.3.3 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/viper v1.7.1 // indirect
-	github.com/theupdateframework/notary v0.6.1
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/urfave/cli/v2 v2.2.0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
-	gopkg.in/dancannon/gorethink.v3 v3.0.5 // indirect
-	gopkg.in/fatih/pool.v2 v2.0.0 // indirect
-	gopkg.in/gorethink/gorethink.v3 v3.0.5 // indirect
 )
 
 replace (
