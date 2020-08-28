@@ -6,10 +6,11 @@ import (
 
 	"github.com/docker/distribution/reference"
 	"github.com/gorilla/mux"
+	"github.com/rumpl/ctrun/pkg/storage/types"
 )
 
-// ServerOpts are the options for the server
-type ServerOpts struct {
+// Opts are the options for the server
+type Opts struct {
 	Address     string
 	AccessKey   string
 	SecretKeyID string
@@ -20,12 +21,14 @@ type Server interface {
 }
 
 type registryBuildServer struct {
-	opts ServerOpts
+	address string
+	store   types.Storage
 }
 
-func New(opts ServerOpts) Server {
+func New(address string, store types.Storage) Server {
 	return &registryBuildServer{
-		opts: opts,
+		address: address,
+		store:   store,
 	}
 }
 
@@ -37,7 +40,7 @@ func (s *registryBuildServer) Start() error {
 
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         s.opts.Address,
+		Addr:         s.address,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}

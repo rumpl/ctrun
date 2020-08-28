@@ -5,11 +5,14 @@ import (
 	"os"
 
 	"github.com/rumpl/ctrun/pkg/server"
+	"github.com/rumpl/ctrun/pkg/storage"
+	"github.com/rumpl/ctrun/pkg/storage/types"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
-	var opts server.ServerOpts
+	var address string
+	var storageOpts types.StorageOpts
 	app := &cli.App{
 		Name:  "ctrun",
 		Usage: "No more docker build",
@@ -19,25 +22,37 @@ func main() {
 				Aliases:     []string{"a"},
 				Usage:       "Address to listen to",
 				Value:       "127.0.0.1:1323",
-				Destination: &opts.Address,
+				Destination: &address,
+			},
+			&cli.StringFlag{
+				Name:        "endpoint",
+				Usage:       "S3 endpoint",
+				EnvVars:     []string{"S3_ENDPOINT"},
+				Destination: &storageOpts.Endpoint,
+				Required:    true,
 			},
 			&cli.StringFlag{
 				Name:        "access-key",
 				Usage:       "Access key for the S3 storage",
 				EnvVars:     []string{"ACCESS_KEY_ID"},
-				Destination: &opts.AccessKey,
+				Destination: &storageOpts.AccessKey,
 				Required:    true,
 			},
 			&cli.StringFlag{
 				Name:        "secret-key-id",
 				Usage:       "Secret key id for the S3 storage",
 				EnvVars:     []string{"SECRET_KEY_ID"},
-				Destination: &opts.SecretKeyID,
+				Destination: &storageOpts.SecretKey,
 				Required:    true,
 			},
 		},
 		Action: func(clix *cli.Context) error {
-			s := server.New(opts)
+			store, err := storage.New(storageOpts)
+			if err != nil {
+				return err
+			}
+
+			s := server.New(address, store)
 
 			// It's a lie but we don't care
 			fmt.Println("🚀 Server started")
