@@ -81,11 +81,11 @@ func (b *buildClient) Build(repo string) (string, error) {
 		},
 	}
 
-	ch := make(chan *client.SolveStatus)
-
 	eg, ctx := errgroup.WithContext(context.Background())
 	digest := ""
+
 	var def *llb.Definition
+	ch := make(chan *client.SolveStatus)
 	eg.Go(func() error {
 		res, err := b.c.Solve(ctx, def, solveOpt, ch)
 		if err != nil {
@@ -93,6 +93,9 @@ func (b *buildClient) Build(repo string) (string, error) {
 		}
 
 		digest = res.ExporterResponse["containerimage.digest"]
+		if digest == "" {
+			return errors.New("unable to get the digest of the image")
+		}
 
 		return nil
 	})
@@ -104,11 +107,7 @@ func (b *buildClient) Build(repo string) (string, error) {
 		return nil
 	})
 
-	if err := eg.Wait(); err != nil {
-		return "", err
-	}
-
-	return digest, nil
+	return digest, eg.Wait()
 }
 
 func (b *buildClient) Close() {
