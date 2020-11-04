@@ -32,3 +32,19 @@ Or
 $ ./bin/ctrun --endpoint s3.amazon.com --bucket ctrun --access-key ACCESS_KEY --secret-key-id SECRET_KEY_ID
 🚀 Server started
 ```
+
+## Running with minio
+
+Start the minio server:
+
+```shell
+minio server PATH
+```
+
+**for mac**: add `127.0.0.1 host.docker.internal` to your `/etc/hosts` file.
+
+Launch the server:
+
+```shell
+$ ctrun --endpoint host.docker.internal:9000 --access-key "minio" --secret-key-id "miniostorage"
+```
