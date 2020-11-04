@@ -42,18 +42,21 @@ func NewBuilder(ctx context.Context, store types.Storage) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	dc.NegotiateAPIVersion(ctx)
+
 	hc := &container.HostConfig{
 		Privileged: true,
 	}
 	cfg := &container.Config{
 		Image: builderImage,
 	}
+
 	name := "buildx_buildkit_" + randomdata.SillyName()
-	_, err = dc.ContainerCreate(ctx, cfg, hc, &network.NetworkingConfig{}, name)
-	if err != nil {
+	if _, err = dc.ContainerCreate(ctx, cfg, hc, &network.NetworkingConfig{}, name); err != nil {
 		return nil, err
 	}
+
 	if err = dc.ContainerStart(ctx, name, dockertypes.ContainerStartOptions{}); err != nil {
 		return nil, err
 	}
@@ -70,6 +73,7 @@ func NewBuilder(ctx context.Context, store types.Storage) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	resp, err := dc.ContainerExecAttach(ctx, response.ID, dockertypes.ExecStartCheck{})
 	if err != nil {
 		return nil, err
