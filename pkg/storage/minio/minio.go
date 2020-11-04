@@ -39,9 +39,6 @@ func (s *s3Storage) Url(ctx context.Context, name string) string {
 
 func (s *s3Storage) Put(ctx context.Context, name string, r io.Reader, contentType string) error {
 	_, err := s.client.PutObject(ctx, s.bucket, name, r, -1, minio.PutObjectOptions{
-		UserMetadata: map[string]string{
-			"x-amz-acl": "public-read",
-		},
 		ContentType: contentType,
 	})
 

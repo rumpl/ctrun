@@ -56,9 +56,9 @@ func NewBuilder(ctx context.Context, store types.Storage) (Client, error) {
 		return nil, err
 	}
 
+	// TODO: wait for the daemon to really start, this works, for now
 	time.Sleep(1 * time.Second)
 
-	// this sucks, this is a buildkit container started by buildx, we need the same "driver" buildx has.
 	response, err := dc.ContainerExecCreate(ctx, name, dockertypes.ExecConfig{
 		Cmd:          []string{"buildctl", "dial-stdio"},
 		AttachStdin:  true,
