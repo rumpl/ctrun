@@ -8,7 +8,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/Pallinder/go-randomdata"
 	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
 	dockerclient "github.com/docker/docker/client"
 	"github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/client/llb"
@@ -19,6 +22,8 @@ import (
 )
 
 const manifestV1 = "application/vnd.oci.image.manifest.v1+json"
+
+const builderImage = "moby/buildkit:buildx-stable-1"
 
 type Client interface {
 	Build(string) (string, error)
@@ -36,8 +41,25 @@ func NewBuilder(store types.Storage) (Client, error) {
 		return nil, err
 	}
 	dc.NegotiateAPIVersion(context.Background())
+	hc := &container.HostConfig{
+		Privileged: true,
+	}
+	cfg := &container.Config{
+		Image: builderImage,
+	}
+	name := "buildx_buildkit_" + randomdata.SillyName()
+	_, err = dc.ContainerCreate(context.Background(), cfg, hc, &network.NetworkingConfig{}, name)
+	if err != nil {
+		return nil, err
+	}
+	if err = dc.ContainerStart(context.Background(), name, dockertypes.ContainerStartOptions{}); err != nil {
+		return nil, err
+	}
+
+	time.Sleep(1 * time.Second)
+
 	// this sucks, this is a buildkit container started by buildx, we need the same "driver" buildx has.
-	response, err := dc.ContainerExecCreate(context.Background(), "buildx_buildkit_objective_noyce0", dockertypes.ExecConfig{
+	response, err := dc.ContainerExecCreate(context.Background(), name, dockertypes.ExecConfig{
 		Cmd:          []string{"buildctl", "dial-stdio"},
 		AttachStdin:  true,
 		AttachStdout: true,

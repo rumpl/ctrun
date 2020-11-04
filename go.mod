@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
+	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/containerd/console v1.0.0 // indirect
 	github.com/docker/distribution v2.7.1-0.20190205005809-0d3efadf0154+incompatible
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
@@ -17,6 +18,7 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/opencontainers/selinux v1.3.3 // indirect
 	github.com/pkg/errors v0.9.1
+	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/urfave/cli/v2 v2.2.0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
