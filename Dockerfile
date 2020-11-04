@@ -8,7 +8,8 @@ WORKDIR /ctrun
 ENV GO111MODULE=on
 RUN apk add --no-cache make
 COPY go.* .
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 FROM base AS make-cli
 ENV CGO_ENABLED=0
