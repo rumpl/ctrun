@@ -13,7 +13,7 @@ import (
 func (s *registryBuildServer) blobs(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	parts := strings.Split(vars["reference"], ":")
-	logrus.Infof("Getting blobs for %s", parts)
+	logrus.Debugf("Getting blobs for %s", parts[1])
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

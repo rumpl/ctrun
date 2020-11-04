@@ -7,16 +7,24 @@ import (
 	"github.com/rumpl/ctrun/pkg/server"
 	"github.com/rumpl/ctrun/pkg/storage"
 	"github.com/rumpl/ctrun/pkg/storage/types"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
+	var debug bool
 	var address string
 	var storageOpts types.StorageOpts
 	app := &cli.App{
 		Name:  "ctrun",
 		Usage: "No more docker build",
 		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:        "debug",
+				Aliases:     []string{"d"},
+				Usage:       "Debug log level",
+				Destination: &debug,
+			},
 			&cli.StringFlag{
 				Name:        "address",
 				Aliases:     []string{"a"},
@@ -53,6 +61,9 @@ func main() {
 			},
 		},
 		Action: func(clix *cli.Context) error {
+			if debug {
+				logrus.SetLevel(logrus.DebugLevel)
+			}
 			store, err := storage.New(clix.Context, storageOpts)
 			if err != nil {
 				return err

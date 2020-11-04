@@ -19,6 +19,7 @@ import (
 	"github.com/moby/moby/pkg/stdcopy"
 	"github.com/pkg/errors"
 	"github.com/rumpl/ctrun/pkg/storage/types"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -90,6 +91,7 @@ func NewBuilder(ctx context.Context, store types.Storage) (Client, error) {
 }
 
 func (b *buildClient) Build(ctx context.Context, repo string) (string, error) {
+	reader, wrapped := b.wrapWriteCloser(ctx, repo)
 	solveOpt := client.SolveOpt{
 		Frontend: "dockerfile.v0",
 		FrontendAttrs: map[string]string{
@@ -99,7 +101,7 @@ func (b *buildClient) Build(ctx context.Context, repo string) (string, error) {
 		Exports: []client.ExportEntry{
 			{
 				Type:   "oci",
-				Output: b.wrapWriteCloser(ctx, repo),
+				Output: wrapped,
 			},
 		},
 	}
@@ -109,6 +111,9 @@ func (b *buildClient) Build(ctx context.Context, repo string) (string, error) {
 
 	var def *llb.Definition
 	ch := make(chan *client.SolveStatus)
+
+	eg.Go(reader)
+
 	eg.Go(func() error {
 		res, err := b.c.Solve(ctx, def, solveOpt, ch)
 		if err != nil {
@@ -137,35 +142,37 @@ func (b *buildClient) Close() {
 	b.c.Close()
 }
 
-func (b *buildClient) wrapWriteCloser(ctx context.Context, repo string) func(map[string]string) (io.WriteCloser, error) {
+func (b *buildClient) wrapWriteCloser(ctx context.Context, repo string) (func() error, func(map[string]string) (io.WriteCloser, error)) {
 	pr, pw := io.Pipe()
-	// TODO: check errors
-	go func() {
+	reader := func() error {
 		tr := tar.NewReader(pr)
 
 		for {
 			header, err := tr.Next()
 			switch {
 			case err == io.EOF:
-				return
+				return nil
 			case err != nil:
-				panic(err)
+				logrus.Errorf("Reading tar contents failed %s", err)
+				return err
 			case header == nil:
-				return
+				return nil
 			}
 
 			switch header.Typeflag {
 			case tar.TypeDir:
 				continue
 			case tar.TypeReg:
-				if err := b.store.Put(ctx, fmt.Sprintf("%s/%s", repo, header.Name), tr, manifestV1); err != nil {
-					panic(err)
+				name := fmt.Sprintf("%s/%s", repo, header.Name)
+				if err := b.store.Put(ctx, name, tr, manifestV1); err != nil {
+					logrus.Errorf("Put to storage failed %s", err)
+					return err
 				}
 			}
 		}
-	}()
+	}
 
-	return func(d map[string]string) (io.WriteCloser, error) {
+	return reader, func(d map[string]string) (io.WriteCloser, error) {
 		return pw, nil
 	}
 }
