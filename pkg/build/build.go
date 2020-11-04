@@ -3,6 +3,7 @@ package build
 import (
 	"archive/tar"
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -98,7 +99,7 @@ func (b *buildClient) Build(ctx context.Context, repo string) (string, error) {
 		Exports: []client.ExportEntry{
 			{
 				Type:   "oci",
-				Output: b.wrapWriteCloser(ctx),
+				Output: b.wrapWriteCloser(ctx, repo),
 			},
 		},
 	}
@@ -136,7 +137,7 @@ func (b *buildClient) Close() {
 	b.c.Close()
 }
 
-func (b *buildClient) wrapWriteCloser(ctx context.Context) func(map[string]string) (io.WriteCloser, error) {
+func (b *buildClient) wrapWriteCloser(ctx context.Context, repo string) func(map[string]string) (io.WriteCloser, error) {
 	pr, pw := io.Pipe()
 	// TODO: check errors
 	go func() {
@@ -157,7 +158,7 @@ func (b *buildClient) wrapWriteCloser(ctx context.Context) func(map[string]strin
 			case tar.TypeDir:
 				continue
 			case tar.TypeReg:
-				if err := b.store.Put(ctx, header.Name, tr, manifestV1); err != nil {
+				if err := b.store.Put(ctx, fmt.Sprintf("%s/%s", repo, header.Name), tr, manifestV1); err != nil {
 					panic(err)
 				}
 			}
