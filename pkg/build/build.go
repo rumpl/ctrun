@@ -35,12 +35,12 @@ type buildClient struct {
 	store types.Storage
 }
 
-func NewBuilder(store types.Storage) (Client, error) {
+func NewBuilder(ctx context.Context, store types.Storage) (Client, error) {
 	dc, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv)
 	if err != nil {
 		return nil, err
 	}
-	dc.NegotiateAPIVersion(context.Background())
+	dc.NegotiateAPIVersion(ctx)
 	hc := &container.HostConfig{
 		Privileged: true,
 	}
@@ -48,18 +48,18 @@ func NewBuilder(store types.Storage) (Client, error) {
 		Image: builderImage,
 	}
 	name := "buildx_buildkit_" + randomdata.SillyName()
-	_, err = dc.ContainerCreate(context.Background(), cfg, hc, &network.NetworkingConfig{}, name)
+	_, err = dc.ContainerCreate(ctx, cfg, hc, &network.NetworkingConfig{}, name)
 	if err != nil {
 		return nil, err
 	}
-	if err = dc.ContainerStart(context.Background(), name, dockertypes.ContainerStartOptions{}); err != nil {
+	if err = dc.ContainerStart(ctx, name, dockertypes.ContainerStartOptions{}); err != nil {
 		return nil, err
 	}
 
 	time.Sleep(1 * time.Second)
 
 	// this sucks, this is a buildkit container started by buildx, we need the same "driver" buildx has.
-	response, err := dc.ContainerExecCreate(context.Background(), name, dockertypes.ExecConfig{
+	response, err := dc.ContainerExecCreate(ctx, name, dockertypes.ExecConfig{
 		Cmd:          []string{"buildctl", "dial-stdio"},
 		AttachStdin:  true,
 		AttachStdout: true,
@@ -68,14 +68,14 @@ func NewBuilder(store types.Storage) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := dc.ContainerExecAttach(context.Background(), response.ID, dockertypes.ExecStartCheck{})
+	resp, err := dc.ContainerExecAttach(ctx, response.ID, dockertypes.ExecStartCheck{})
 	if err != nil {
 		return nil, err
 	}
 
 	conn := demuxConn(resp.Conn)
 
-	c, err := client.New(context.Background(), "", client.WithDialer(func(string, time.Duration) (net.Conn, error) {
+	c, err := client.New(ctx, "", client.WithDialer(func(string, time.Duration) (net.Conn, error) {
 		return conn, nil
 	}))
 	if err != nil {

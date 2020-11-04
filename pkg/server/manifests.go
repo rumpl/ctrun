@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rumpl/ctrun/pkg/build"
@@ -14,7 +16,10 @@ func (s *registryBuildServer) manifests(w http.ResponseWriter, r *http.Request) 
 
 	logrus.Info("Manifest ", vars["name"])
 
-	builder, err := build.NewBuilder(s.store)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	builder, err := build.NewBuilder(ctx, s.store)
 	if err != nil {
 		logrus.Error(err)
 		w.WriteHeader(500)
@@ -30,6 +35,6 @@ func (s *registryBuildServer) manifests(w http.ResponseWriter, r *http.Request) 
 	}
 
 	parts := strings.Split(digest, ":")
-	logrus.Info("Done ", s.store.Url(parts[1]))
+	logrus.Debugf("Image build done, redirecting to %s", s.store.Url(parts[1]))
 	http.Redirect(w, r, s.store.Url(parts[1]), 301)
 }
