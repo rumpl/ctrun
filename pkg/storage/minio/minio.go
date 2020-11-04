@@ -34,7 +34,6 @@ func New(opts types.StorageOpts) (types.Storage, error) {
 
 func (s *s3Storage) Url(name string) string {
 	u, _ := s.client.PresignedGetObject(context.Background(), "ctrun", "blobs/sha256/"+name, 5*time.Minute, nil)
-	u.Host = "host.docker.internal:9000"
 	return u.String()
 }
 
