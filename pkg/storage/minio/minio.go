@@ -32,8 +32,8 @@ func New(ctx context.Context, opts types.StorageOpts) (types.Storage, error) {
 	}, nil
 }
 
-func (s *s3Storage) Url(ctx context.Context, name string) string {
-	u, _ := s.client.PresignedGetObject(ctx, "ctrun", "blobs/sha256/"+name, 5*time.Minute, nil)
+func (s *s3Storage) Url(ctx context.Context, repo string, name string) string {
+	u, _ := s.client.PresignedGetObject(ctx, "ctrun", repo+"/blobs/sha256/"+name, 5*time.Minute, nil)
 	return u.String()
 }
 

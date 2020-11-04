@@ -18,5 +18,7 @@ func (s *registryBuildServer) blobs(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	http.Redirect(w, r, s.store.Url(ctx, parts[1]), 301)
+	blobURL := s.store.Url(ctx, "", parts[1])
+	logrus.Infof("Blobs redirecting to %s", blobURL)
+	http.Redirect(w, r, blobURL, 301)
 }

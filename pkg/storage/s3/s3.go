@@ -32,7 +32,7 @@ func New(opts types.StorageOpts) (types.Storage, error) {
 	}, nil
 }
 
-func (s *s3Storage) Url(_ context.Context, name string) string {
+func (s *s3Storage) Url(_ context.Context, _ string, name string) string {
 	return fmt.Sprintf("https://%s.%s/blobs/sha256/%s", s.bucket, s.endpoint, name)
 }
 

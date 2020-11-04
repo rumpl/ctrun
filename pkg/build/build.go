@@ -25,7 +25,7 @@ import (
 
 const manifestV1 = "application/vnd.oci.image.manifest.v1+json"
 
-const builderImage = "moby/buildkit:buildx-stable-1"
+const builderImage = "moby/buildkit:master"
 
 type Client interface {
 	Build(context.Context, string) (string, error)
@@ -108,9 +108,28 @@ func (b *buildClient) Build(ctx context.Context, repo string) (string, error) {
 				Output: wrapped,
 			},
 		},
+		// TODO: This uses an insecure registry as cache, we need to send the right
+		// configuration to buildkitd when we create a new instance.
+		// CacheExports: []client.CacheOptionsEntry{
+		// 	{
+		// 		Type: "registry",
+		// 		Attrs: map[string]string{
+		// 			"ref": "host.docker.internal:5000/cache:1",
+		// 		},
+		// 	},
+		// },
+		// CacheImports: []client.CacheOptionsEntry{
+		// 	{
+		// 		Type: "registry",
+		// 		Attrs: map[string]string{
+		// 			"ref":  "host.docker.internal:5000/cache:1",
+		// 			"mode": "max",
+		// 		},
+		// 	},
+		// },
 	}
 
-	eg, ctx := errgroup.WithContext(ctx)
+	eg, _ := errgroup.WithContext(ctx)
 	digest := ""
 
 	var def *llb.Definition
@@ -120,6 +139,7 @@ func (b *buildClient) Build(ctx context.Context, repo string) (string, error) {
 
 	eg.Go(func() error {
 		res, err := b.c.Solve(ctx, def, solveOpt, ch)
+		logrus.Info("Build finished")
 		if err != nil {
 			return errors.Wrap(err, "solve")
 		}

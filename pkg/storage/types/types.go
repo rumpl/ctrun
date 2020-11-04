@@ -6,7 +6,7 @@ import (
 )
 
 type Storage interface {
-	Url(ctx context.Context, name string) string
+	Url(ctx context.Context, repo string, name string) string
 	Put(ctx context.Context, name string, r io.Reader, contentType string) error
 }
 
