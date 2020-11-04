@@ -53,7 +53,7 @@ func main() {
 			},
 		},
 		Action: func(clix *cli.Context) error {
-			store, err := storage.New(storageOpts)
+			store, err := storage.New(clix.Context, storageOpts)
 			if err != nil {
 				return err
 			}

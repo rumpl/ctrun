@@ -27,7 +27,7 @@ func (s *registryBuildServer) manifests(w http.ResponseWriter, r *http.Request) 
 	}
 	defer builder.Close()
 
-	digest, err := builder.Build(vars["name"])
+	digest, err := builder.Build(ctx, vars["name"])
 	if err != nil {
 		logrus.Error(err)
 		w.WriteHeader(500)
@@ -35,6 +35,6 @@ func (s *registryBuildServer) manifests(w http.ResponseWriter, r *http.Request) 
 	}
 
 	parts := strings.Split(digest, ":")
-	logrus.Debugf("Image build done, redirecting to %s", s.store.Url(parts[1]))
-	http.Redirect(w, r, s.store.Url(parts[1]), 301)
+	logrus.Debugf("Image build done, redirecting to %s", s.store.Url(ctx, parts[1]))
+	http.Redirect(w, r, s.store.Url(ctx, parts[1]), 301)
 }

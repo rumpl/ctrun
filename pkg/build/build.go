@@ -26,7 +26,7 @@ const manifestV1 = "application/vnd.oci.image.manifest.v1+json"
 const builderImage = "moby/buildkit:buildx-stable-1"
 
 type Client interface {
-	Build(string) (string, error)
+	Build(context.Context, string) (string, error)
 	Close()
 }
 
@@ -88,7 +88,7 @@ func NewBuilder(ctx context.Context, store types.Storage) (Client, error) {
 	}, nil
 }
 
-func (b *buildClient) Build(repo string) (string, error) {
+func (b *buildClient) Build(ctx context.Context, repo string) (string, error) {
 	solveOpt := client.SolveOpt{
 		Frontend: "dockerfile.v0",
 		FrontendAttrs: map[string]string{
@@ -98,12 +98,12 @@ func (b *buildClient) Build(repo string) (string, error) {
 		Exports: []client.ExportEntry{
 			{
 				Type:   "oci",
-				Output: b.wrapWriteCloser(),
+				Output: b.wrapWriteCloser(ctx),
 			},
 		},
 	}
 
-	eg, ctx := errgroup.WithContext(context.Background())
+	eg, ctx := errgroup.WithContext(ctx)
 	digest := ""
 
 	var def *llb.Definition
@@ -136,7 +136,7 @@ func (b *buildClient) Close() {
 	b.c.Close()
 }
 
-func (b *buildClient) wrapWriteCloser() func(map[string]string) (io.WriteCloser, error) {
+func (b *buildClient) wrapWriteCloser(ctx context.Context) func(map[string]string) (io.WriteCloser, error) {
 	pr, pw := io.Pipe()
 	// TODO: check errors
 	go func() {
@@ -157,7 +157,7 @@ func (b *buildClient) wrapWriteCloser() func(map[string]string) (io.WriteCloser,
 			case tar.TypeDir:
 				continue
 			case tar.TypeReg:
-				if err := b.store.Put(header.Name, tr, manifestV1); err != nil {
+				if err := b.store.Put(ctx, header.Name, tr, manifestV1); err != nil {
 					panic(err)
 				}
 			}

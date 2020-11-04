@@ -32,12 +32,12 @@ func New(opts types.StorageOpts) (types.Storage, error) {
 	}, nil
 }
 
-func (s *s3Storage) Url(name string) string {
+func (s *s3Storage) Url(_ context.Context, name string) string {
 	return fmt.Sprintf("https://%s.%s/blobs/sha256/%s", s.bucket, s.endpoint, name)
 }
 
-func (s *s3Storage) Put(name string, r io.Reader, contentType string) error {
-	_, err := s.client.PutObject(context.Background(), s.bucket, name, r, -1, minio.PutObjectOptions{
+func (s *s3Storage) Put(ctx context.Context, name string, r io.Reader, contentType string) error {
+	_, err := s.client.PutObject(ctx, s.bucket, name, r, -1, minio.PutObjectOptions{
 		UserMetadata: map[string]string{
 			"x-amz-acl": "public-read",
 		},

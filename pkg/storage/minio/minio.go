@@ -16,7 +16,7 @@ type s3Storage struct {
 	endpoint string
 }
 
-func New(opts types.StorageOpts) (types.Storage, error) {
+func New(ctx context.Context, opts types.StorageOpts) (types.Storage, error) {
 	minioClient, err := minio.New(opts.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(opts.AccessKey, opts.SecretKey, ""),
 		Secure: false,
@@ -32,13 +32,13 @@ func New(opts types.StorageOpts) (types.Storage, error) {
 	}, nil
 }
 
-func (s *s3Storage) Url(name string) string {
-	u, _ := s.client.PresignedGetObject(context.Background(), "ctrun", "blobs/sha256/"+name, 5*time.Minute, nil)
+func (s *s3Storage) Url(ctx context.Context, name string) string {
+	u, _ := s.client.PresignedGetObject(ctx, "ctrun", "blobs/sha256/"+name, 5*time.Minute, nil)
 	return u.String()
 }
 
-func (s *s3Storage) Put(name string, r io.Reader, contentType string) error {
-	_, err := s.client.PutObject(context.Background(), s.bucket, name, r, -1, minio.PutObjectOptions{
+func (s *s3Storage) Put(ctx context.Context, name string, r io.Reader, contentType string) error {
+	_, err := s.client.PutObject(ctx, s.bucket, name, r, -1, minio.PutObjectOptions{
 		UserMetadata: map[string]string{
 			"x-amz-acl": "public-read",
 		},

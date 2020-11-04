@@ -1,10 +1,13 @@
 package types
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 type Storage interface {
-	Url(name string) string
-	Put(name string, r io.Reader, contentType string) error
+	Url(ctx context.Context, name string) string
+	Put(ctx context.Context, name string, r io.Reader, contentType string) error
 }
 
 type StorageOpts struct {
