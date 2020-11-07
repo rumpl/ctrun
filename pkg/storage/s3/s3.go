@@ -22,7 +22,7 @@ func New(opts types.StorageOpts) (types.Storage, error) {
 		Secure: true,
 	})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &s3Storage{
@@ -32,7 +32,7 @@ func New(opts types.StorageOpts) (types.Storage, error) {
 	}, nil
 }
 
-func (s *s3Storage) Url(_ context.Context, _ string, name string) string {
+func (s *s3Storage) URL(_ context.Context, _ string, name string) string {
 	return fmt.Sprintf("https://%s.%s/blobs/sha256/%s", s.bucket, s.endpoint, name)
 }
 

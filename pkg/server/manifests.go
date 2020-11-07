@@ -37,7 +37,7 @@ func (s *registryBuildServer) manifests(w http.ResponseWriter, r *http.Request) 
 	}
 
 	parts := strings.Split(digest, ":")
-	blobURL := s.store.Url(ctx, repo, parts[1])
+	blobURL := s.store.URL(ctx, repo, parts[1])
 	logrus.Debugf("Image build done, redirecting to %s", blobURL)
 	http.Redirect(w, r, blobURL, 301)
 }

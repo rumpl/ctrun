@@ -22,7 +22,7 @@ func New(ctx context.Context, opts types.StorageOpts) (types.Storage, error) {
 		Secure: false,
 	})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &s3Storage{
@@ -32,7 +32,7 @@ func New(ctx context.Context, opts types.StorageOpts) (types.Storage, error) {
 	}, nil
 }
 
-func (s *s3Storage) Url(ctx context.Context, repo string, name string) string {
+func (s *s3Storage) URL(ctx context.Context, repo string, name string) string {
 	u, _ := s.client.PresignedGetObject(ctx, "ctrun", repo+"/blobs/sha256/"+name, 5*time.Minute, nil)
 	return u.String()
 }
